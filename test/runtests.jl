@@ -2,6 +2,7 @@ using SafeTestsets, Test
 
 @testset "SparseBandedMatrices" begin
     @safetestset "Quality Assurance" include("qa.jl")
+    @safetestset "JET Static Analysis" include("jet.jl")
 
     @safetestset "Constructors" begin
         using SparseBandedMatrices
