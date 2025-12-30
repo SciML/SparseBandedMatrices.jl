@@ -15,15 +15,27 @@
 A fast implementation of Sparse Banded Matrices in Julia. Primarily developed for use in a Butterfly LU factorization implemented in [RecursiveFactorization.jl](https://github.com/JuliaLinearAlgebra/RecursiveFactorization.jl) and [LinearSolve.jl](https://github.com/SciML/LinearSolve.jl).
 
 ## Examples
+
 ```julia
 using SparseBandedMatrices
 
+# Create an empty 5×5 sparse banded matrix
 A = SparseBandedMatrix{Float64}(undef, 5, 5)
-A[1,1] = 5
-setdiagonal!(A, [3,4,5], true) # sets the third diagonal from the bottom to have the values 3, 4, and 5
+A[1,1] = 5.0
 
-B = SparseBandedMatrix{Float64}([1, 8], [[3], [-2, 5, 1, 3]], 6, 6)
+# Set the third diagonal from the bottom to have the values [3, 4, 5]
+setdiagonal!(A, [3.0, 4.0, 5.0], true)
+
+# Create a matrix with pre-specified diagonals
+# This creates a 6×6 matrix with diagonals at indices 1 and 8
+B = SparseBandedMatrix{Float64}([1, 8], [[3.0], [-2.0, 5.0, 1.0, 3.0]], 6, 6)
 ```
 
-## Intended Considerations
-The implementation of SparseBandedMatrices is designed to be fast for matrix and vector multiplications. 
+## Design Considerations
+
+The implementation of `SparseBandedMatrices` is designed to be fast for matrix-matrix and matrix-vector multiplications. The sparse banded structure provides significant performance advantages when working with matrices that have a limited number of non-zero diagonals, which commonly arise in:
+
+- Butterfly LU factorizations (see [RecursiveFactorization.jl](https://github.com/JuliaLinearAlgebra/RecursiveFactorization.jl))
+- Linear system solving (see [LinearSolve.jl](https://github.com/SciML/LinearSolve.jl))
+- Finite difference discretizations
+- Other sparse linear algebra problems with banded structure 
