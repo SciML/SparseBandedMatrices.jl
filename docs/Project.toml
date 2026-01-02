@@ -1,6 +1,6 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-SparseBandedMatrices = "b42f87ec-cfbe-4098-ba17-1affa37bb2d8"
+SparseBandedMatrices = "bd59d7e1-4699-4102-944e-d05209cb92aa"
 
 [compat]
 Documenter = "1"
