@@ -1,6 +1,7 @@
 module SparseBandedMatrices
 
 using LinearAlgebra, .Threads
+using PrecompileTools
 
 """
     SparseBandedMatrix{T} <: AbstractMatrix{T}
@@ -310,5 +311,39 @@ function LinearAlgebra.mul!(C :: Matrix{T}, A:: SparseBandedMatrix{T}, B :: Spar
 end
 
 export SparseBandedMatrix, size, getindex, setindex!, setdiagonal!, mul!
+
+@setup_workload begin
+    # Minimal setup - create small test arrays
+    @compile_workload begin
+        # Precompile Float64 operations (most common)
+        A = SparseBandedMatrix{Float64}(undef, 10, 10)
+        A[1, 1] = 1.0
+        A[5, 5] = 2.0
+        _ = A[1, 1]
+        setdiagonal!(A, [1.0, 2.0, 3.0], true)
+        setdiagonal!(A, [4.0, 5.0], false)
+
+        # Precompile mul! with Matrix (SparseBandedMatrix * Matrix)
+        B = ones(10, 2)
+        C = zeros(10, 2)
+        mul!(C, A, B, 1.0, 0.0)
+
+        # Precompile mul! from right (Matrix * SparseBandedMatrix)
+        B2 = ones(2, 10)
+        C2 = zeros(2, 10)
+        mul!(C2, B2, A, 1.0, 0.0)
+
+        # Precompile SparseBandedMatrix * SparseBandedMatrix -> Matrix
+        A2 = SparseBandedMatrix{Float64}(undef, 10, 10)
+        A2[1, 1] = 1.0
+        setdiagonal!(A2, [1.0, 2.0], true)
+        C3 = zeros(10, 10)
+        mul!(C3, A, A2, 1.0, 0.0)
+
+        # Precompile SparseBandedMatrix * SparseBandedMatrix -> SparseBandedMatrix
+        C4 = SparseBandedMatrix{Float64}(undef, 10, 10)
+        mul!(C4, A, A2, 1.0, 0.0)
+    end
+end
 
 end
