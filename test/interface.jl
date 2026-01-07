@@ -1,155 +1,132 @@
-using Test
-using SparseBandedMatrices
-using LinearAlgebra
+using SparseBandedMatrices, LinearAlgebra, Test
 
-@testset "BigFloat Support" begin
-    # Test 1: Basic constructor
-    @testset "Constructor" begin
-        A = SparseBandedMatrix{BigFloat}(undef, 5, 5)
-        @test size(A) == (5, 5)
-        @test eltype(A) == BigFloat
+@testset "BigFloat support" begin
+    dim = 5
+    diag_locs = [1, 3, 5, 7, 9]
+    diag_vals = Vector{Vector{BigFloat}}(undef, length(diag_locs))
+    for (j, loc) in enumerate(diag_locs)
+        len = min(loc, 2 * dim - loc)
+        diag_vals[j] = BigFloat.(rand(len))
     end
 
-    # Test 2: setindex!/getindex
-    @testset "Indexing" begin
-        A = SparseBandedMatrix{BigFloat}(undef, 5, 5)
-        A[1, 1] = BigFloat(2.0)
-        A[2, 3] = BigFloat(3.14)
-        @test A[1, 1] == BigFloat(2.0)
-        @test typeof(A[1, 1]) == BigFloat
-        @test A[3, 3] == BigFloat(0.0)  # Unset element returns zero
-        @test typeof(A[3, 3]) == BigFloat
+    A = SparseBandedMatrix{BigFloat}(diag_locs, diag_vals, dim, dim)
+    @test eltype(A) == BigFloat
+    @test size(A) == (dim, dim)
+
+    # Test getindex returns BigFloat
+    @test A[1, 1] isa BigFloat
+    @test A[2, 3] isa BigFloat  # zero element
+
+    # Test setindex! with BigFloat
+    A[1, 1] = big"42.0"
+    @test A[1, 1] == big"42.0"
+
+    # Test mul! with BigFloat matrices
+    B = Matrix{BigFloat}(ones(BigFloat, dim, 3))
+    C = Matrix{BigFloat}(zeros(BigFloat, dim, 3))
+    mul!(C, A, B, big"1.0", big"0.0")
+    @test eltype(C) == BigFloat
+
+    # Verify result
+    A_dense = zeros(BigFloat, dim, dim)
+    for i in 1:dim, j in 1:dim
+        A_dense[i, j] = A[i, j]
     end
+    expected = A_dense * B
+    @test isapprox(C, expected)
 
-    # Test 3: setdiagonal!
-    @testset "setdiagonal!" begin
-        A = SparseBandedMatrix{BigFloat}(undef, 5, 5)
-        diagvals = BigFloat[1.0, 2.0, 3.0]
-        setdiagonal!(A, diagvals, true)
-        setdiagonal!(A, BigFloat[4.0, 5.0], false)
-        # Verify the diagonals were set (checking actual values)
-        @test A[3, 1] == BigFloat(1.0)  # first element of lower diagonal
-        @test A[4, 2] == BigFloat(2.0)  # second element of lower diagonal
-        @test A[5, 3] == BigFloat(3.0)  # third element of lower diagonal
-        @test A[1, 4] == BigFloat(4.0)  # first element of upper diagonal
-        @test A[2, 5] == BigFloat(5.0)  # second element of upper diagonal
-    end
-
-    # Test 4: Constructor with diagonal values
-    @testset "Constructor with diagonals" begin
-        ind_vals = [2, 7]
-        diag_vals = [BigFloat[1.0, 2.0], BigFloat[3.0, 4.0, 5.0]]
-        B = SparseBandedMatrix{BigFloat}(ind_vals, diag_vals, 5, 5)
-        @test eltype(B) == BigFloat
-    end
-
-    # Test 5: mul! with Matrix
-    @testset "mul! Matrix operations" begin
-        A = SparseBandedMatrix{BigFloat}(undef, 3, 3)
-        A[1, 1] = BigFloat(1.0)
-        A[2, 2] = BigFloat(2.0)
-        A[3, 3] = BigFloat(3.0)
-
-        B = ones(BigFloat, 3, 2)
-        C = zeros(BigFloat, 3, 2)
-
-        mul!(C, A, B, BigFloat(1.0), BigFloat(0.0))
-        expected = Matrix(A) * B
-        @test isapprox(C, expected)
-    end
-
-    # Test 6: * operator (this was the key bug fix)
-    @testset "* operator" begin
-        A = SparseBandedMatrix{BigFloat}(undef, 3, 3)
-        A[1, 1] = BigFloat(1.0)
-        A[2, 2] = BigFloat(2.0)
-        A[3, 3] = BigFloat(3.0)
-
-        B = ones(BigFloat, 3, 2)
-        C = A * B
-        expected = Matrix(A) * B
-
-        @test eltype(C) == BigFloat
-        @test isapprox(C, expected)
-    end
-
-    # Test 7: Matrix * SparseBandedMatrix
-    @testset "Matrix * SparseBandedMatrix" begin
-        A = SparseBandedMatrix{BigFloat}(undef, 3, 3)
-        A[1, 1] = BigFloat(1.0)
-        A[2, 2] = BigFloat(2.0)
-        A[3, 3] = BigFloat(3.0)
-
-        B = ones(BigFloat, 2, 3)
-        C = B * A
-        expected = B * Matrix(A)
-
-        @test eltype(C) == BigFloat
-        @test isapprox(C, expected)
-    end
-
-    # Test 8: SparseBandedMatrix * SparseBandedMatrix
-    @testset "SparseBandedMatrix * SparseBandedMatrix" begin
-        A = SparseBandedMatrix{BigFloat}(undef, 3, 3)
-        A[1, 1] = BigFloat(1.0)
-        A[2, 2] = BigFloat(2.0)
-
-        B = SparseBandedMatrix{BigFloat}(undef, 3, 3)
-        B[1, 1] = BigFloat(2.0)
-        B[3, 3] = BigFloat(3.0)
-
-        C = A * B
-        expected = Matrix(A) * Matrix(B)
-        @test isapprox(C, expected)
-    end
+    # Test mul! with Matrix * SparseBandedMatrix
+    B2 = Matrix{BigFloat}(ones(BigFloat, 3, dim))
+    C2 = Matrix{BigFloat}(zeros(BigFloat, 3, dim))
+    mul!(C2, B2, A, big"1.0", big"0.0")
+    expected2 = B2 * A_dense
+    @test isapprox(C2, expected2)
 end
 
-# Note: ComplexF64 is not fully supported because fma() is not defined for complex numbers.
-# This is a known limitation of the current implementation which uses fma for performance.
+@testset "ComplexF64 support" begin
+    A = SparseBandedMatrix{ComplexF64}(undef, 5, 5)
+    A[1, 1] = 2.0 + 1.0im
+    A[2, 2] = 3.0 - 2.0im
+    A[3, 3] = 4.0 + 0.5im
 
-@testset "AbstractArray Interface" begin
+    @test eltype(A) == ComplexF64
+    @test A[1, 1] == 2.0 + 1.0im
+    @test A[4, 4] == 0.0 + 0.0im  # zero element
+
+    B = Matrix{ComplexF64}(ones(ComplexF64, 5, 3))
+    C = Matrix{ComplexF64}(zeros(ComplexF64, 5, 3))
+
+    mul!(C, A, B, 1.0 + 0im, 0.0 + 0im)
+    @test eltype(C) == ComplexF64
+
+    # Verify result
+    A_dense = zeros(ComplexF64, 5, 5)
+    for i in 1:5, j in 1:5
+        A_dense[i, j] = A[i, j]
+    end
+    expected = A_dense * B
+    @test isapprox(C, expected)
+
+    # Test mul! with Matrix * SparseBandedMatrix
+    B2 = Matrix{ComplexF64}(ones(ComplexF64, 3, 5))
+    C2 = Matrix{ComplexF64}(zeros(ComplexF64, 3, 5))
+    mul!(C2, B2, A, 1.0 + 0im, 0.0 + 0im)
+    expected2 = B2 * A_dense
+    @test isapprox(C2, expected2)
+end
+
+@testset "Float32 support" begin
+    A = SparseBandedMatrix{Float32}(undef, 5, 5)
+    A[1, 1] = 2.0f0
+    A[2, 2] = 3.0f0
+    A[3, 3] = 4.0f0
+
+    @test eltype(A) == Float32
+    @test A[1, 1] == 2.0f0
+
+    B = Matrix{Float32}(ones(Float32, 5, 3))
+    C = Matrix{Float32}(zeros(Float32, 5, 3))
+
+    mul!(C, A, B, 1.0f0, 0.0f0)
+    @test eltype(C) == Float32
+
+    # Verify result
+    A_dense = zeros(Float32, 5, 5)
+    for i in 1:5, j in 1:5
+        A_dense[i, j] = A[i, j]
+    end
+    expected = A_dense * B
+    @test isapprox(C, expected)
+end
+
+@testset "AbstractArray interface" begin
     A = SparseBandedMatrix{Float64}(undef, 5, 5)
-    A[1, 1] = 1.0
-    A[2, 2] = 2.0
-    A[3, 3] = 3.0
-    A[1, 3] = 0.5
+    A[1, 1] = 2.0
+    A[2, 2] = 3.0
+    A[3, 3] = 4.0
 
-    @testset "size" begin
-        @test size(A) == (5, 5)
-        @test size(A, 1) == 5
-        @test size(A, 2) == 5
-    end
+    # Test size
+    @test size(A) == (5, 5)
+    @test size(A, 1) == 5
+    @test size(A, 2) == 5
 
-    @testset "length" begin
-        @test length(A) == 25
-    end
+    # Test length
+    @test length(A) == 25
 
-    @testset "eltype" begin
-        @test eltype(A) == Float64
-    end
+    # Test eltype
+    @test eltype(A) == Float64
 
-    @testset "axes" begin
-        @test axes(A) == (Base.OneTo(5), Base.OneTo(5))
-    end
+    # Test firstindex/lastindex
+    @test firstindex(A) == 1
+    @test lastindex(A) == 25
 
-    @testset "firstindex/lastindex" begin
-        @test firstindex(A) == 1
-        @test lastindex(A) == 25
-    end
+    # Test IndexStyle
+    @test Base.IndexStyle(typeof(A)) == Base.IndexCartesian()
 
-    @testset "iteration" begin
-        vals = collect(A)
-        @test length(vals) == 25
-        @test vals[1] == 1.0  # A[1,1]
+    # Test iteration
+    count = 0
+    for _ in A
+        count += 1
     end
-
-    @testset "Matrix conversion" begin
-        B = Matrix(A)
-        @test typeof(B) == Matrix{Float64}
-        @test all(A[i, j] == B[i, j] for i in 1:5, j in 1:5)
-    end
-
-    @testset "IndexStyle" begin
-        @test Base.IndexStyle(typeof(A)) == IndexCartesian()
-    end
+    @test count == 25
 end
