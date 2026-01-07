@@ -169,7 +169,11 @@ function LinearAlgebra.mul!(C::Matrix{T}, A::SparseBandedMatrix{T}, B::Matrix{T}
     @assert size(A, 2) == size(B, 1)
     @assert size(A, 1) == size(C, 1)
     @assert size(B, 2) == size(C, 2)
-    C .*= b
+    if iszero(b)
+        fill!(C, zero(T))
+    else
+        C .*= b
+    end
 
     rows, cols = size(A)
     @inbounds for (ind, location) in enumerate(A.indices)
@@ -195,13 +199,17 @@ function LinearAlgebra.mul!(C::Matrix{T}, A::SparseBandedMatrix{T}, B::Matrix{T}
     return C
 end
 
-# C = Cb + aBA
+# C = C*b + a*B*A
 function LinearAlgebra.mul!(C::Matrix{T}, A::Matrix{T}, B::SparseBandedMatrix{T}, a::Number, b::Number) where {T}
     @assert size(A, 2) == size(B, 1)
     @assert size(A, 1) == size(C, 1)
     @assert size(B, 2) == size(C, 2)
 
-    C .*= b
+    if iszero(b)
+        fill!(C, zero(T))
+    else
+        C .*= b
+    end
 
     rows, cols = size(B)
     @inbounds for (ind, location) in enumerate(B.indices)
@@ -227,7 +235,12 @@ function LinearAlgebra.mul!(C::SparseBandedMatrix{T}, A::SparseBandedMatrix{T}, 
     @assert size(A, 1) == size(C, 1)
     @assert size(B, 2) == size(C, 2)
 
-    C .*= b
+    if iszero(b)
+        empty!(C.indices)
+        empty!(C.diags)
+    else
+        C .*= b
+    end
 
     rows_a, cols_a = size(A)
     rows_b, cols_b = size(B)
@@ -271,7 +284,11 @@ function LinearAlgebra.mul!(C::Matrix{T}, A::SparseBandedMatrix{T}, B::SparseBan
     @assert size(A, 1) == size(C, 1)
     @assert size(B, 2) == size(C, 2)
 
-    C .*= b
+    if iszero(b)
+        fill!(C, zero(T))
+    else
+        C .*= b
+    end
 
     rows_a, cols_a = size(A)
     rows_b, cols_b = size(B)

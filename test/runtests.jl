@@ -1,8 +1,16 @@
 using SafeTestsets, Test
 
+const GROUP = lowercase(get(ENV, "GROUP", "all"))
+
 @testset "SparseBandedMatrices" begin
     @safetestset "Quality Assurance" include("qa.jl")
-    @safetestset "JET Static Analysis" include("jet.jl")
+
+    # JET tests are skipped on pre-release Julia (GROUP="Core") due to compatibility issues
+    if GROUP != "core"
+        @safetestset "JET Static Analysis" include("jet.jl")
+    end
+
+    @safetestset "Interface Compatibility" include("interface.jl")
 
     @safetestset "Constructors" begin
         using SparseBandedMatrices

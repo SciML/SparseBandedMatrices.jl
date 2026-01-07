@@ -26,8 +26,21 @@ jobs:
         version:
           - "1"
           - "lts"
+    uses: "SciML/.github/.github/workflows/tests.yml@v1"
+    with:
+      julia-version: "${{ matrix.version }}"
+      group: "nopre"
+    secrets: "inherit"
+
+  tests-pre:
+    name: "Tests"
+    strategy:
+      matrix:
+        version:
           - "pre"
     uses: "SciML/.github/.github/workflows/tests.yml@v1"
     with:
       julia-version: "${{ matrix.version }}"
+      group: "Core"
+      continue-on-error: true
     secrets: "inherit"
