@@ -23,7 +23,7 @@ using SparseBandedMatrices
 A = SparseBandedMatrix{Float64}(undef, 5, 5)
 A[1,1] = 5.0
 
-# Set the third diagonal from the bottom to have the values [3, 4, 5]
+# Set a lower diagonal with the values [3.0, 4.0, 5.0]
 setdiagonal!(A, [3.0, 4.0, 5.0], true)
 
 # Create a matrix with pre-specified diagonals
