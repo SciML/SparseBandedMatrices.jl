@@ -59,10 +59,14 @@ Create a matrix with known diagonals upfront:
 
 ```julia
 # Create a 6×6 matrix with two diagonals
-# First diagonal at index 1 with values [3.0]
-# Second diagonal at index 8 with values [-2.0, 5.0, 1.0, 3.0]
+# The constructor takes:
+#   - A vector of diagonal indices [1, 8]
+#   - A vector of vectors containing the diagonal values
+#   - Matrix dimensions (rows, columns)
 B = SparseBandedMatrix{Float64}([1, 8], [[3.0], [-2.0, 5.0, 1.0, 3.0]], 6, 6)
 ```
+
+**Note:** Diagonal indices are stored internally using a specific indexing scheme where for an N×M matrix, diagonal indices range from 1 to N+M-1. The length of each diagonal vector must match the actual length of that diagonal in the matrix.
 
 ### Matrix Operations
 
@@ -92,18 +96,30 @@ The `setdiagonal!` function efficiently sets an entire diagonal:
 ```julia
 A = SparseBandedMatrix{Float64}(undef, 5, 5)
 
-# Set a lower diagonal (third from bottom)
+# Set a lower diagonal
+# The `true` parameter indicates this is a lower diagonal
 setdiagonal!(A, [3.0, 4.0, 5.0], true)
 
 # Set an upper diagonal
+# The `false` parameter indicates this is an upper diagonal
 setdiagonal!(A, [1.0, 2.0], false)
 ```
 
+## Understanding Sparse Banded Matrices
+
+A sparse banded matrix is a matrix where only certain diagonals contain non-zero elements. Unlike dense banded matrices (which store all elements within a band), sparse banded matrices only store the diagonals that actually contain non-zero values, regardless of how far apart they are.
+
+This makes `SparseBandedMatrix` particularly efficient for:
+- Butterfly factorizations where non-zero elements appear on specific, potentially distant diagonals
+- Structured problems where the pattern of non-zero diagonals is known in advance
+- Cases where traditional banded storage would waste memory on zero diagonals
+
 ## Performance Considerations
 
-- Use `setdiagonal!` when possible instead of setting individual elements
-- Pre-specify diagonals during construction when you know them in advance
-- The package is optimized for multiplication operations, making it ideal for iterative solvers
+- Use `setdiagonal!` when possible instead of setting individual elements, as it's more efficient for initializing diagonals
+- Pre-specify diagonals during construction when you know them in advance to avoid repeated memory reallocations
+- The package is optimized for multiplication operations, making it ideal for iterative solvers and matrix factorizations
+- Thread-parallel operations are automatically used for matrix multiplications when Julia threading is enabled
 
 ## API Reference
 
