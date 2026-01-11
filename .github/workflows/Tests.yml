@@ -22,12 +22,20 @@ jobs:
   tests:
     name: "Tests"
     strategy:
+      fail-fast: false
       matrix:
         version:
           - "1"
           - "lts"
           - "pre"
+        group:
+          - Core
+          - nopre
+        exclude:
+          - version: "pre"
+            group: nopre
     uses: "SciML/.github/.github/workflows/tests.yml@v1"
     with:
       julia-version: "${{ matrix.version }}"
+      group: "${{ matrix.group }}"
     secrets: "inherit"
