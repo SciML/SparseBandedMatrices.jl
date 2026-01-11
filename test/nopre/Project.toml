@@ -1,0 +1,10 @@
+[deps]
+JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+SparseBandedMatrices = "bd59d7e1-4699-4102-944e-d05209cb92aa"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[compat]
+JET = "0.9, 0.10, 0.11"
+LinearAlgebra = "1"
+Test = "1"
