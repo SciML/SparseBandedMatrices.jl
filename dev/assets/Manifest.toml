@@ -2,7 +2,7 @@
 
 julia_version = "1.12.6"
 manifest_format = "2.0"
-project_hash = "e71b9db0cd6f6f3ce337ecbdaf481d9d856e000a"
+project_hash = "df321aa7b733f8d581f3396afe8801d7f61c2b8b"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -271,7 +271,7 @@ version = "1.11.0"
 
 [[deps.SparseBandedMatrices]]
 deps = ["LinearAlgebra", "PrecompileTools"]
-path = "/home/runner/work/SparseBandedMatrices.jl/SparseBandedMatrices.jl"
+path = "/home/chrisrackauckas/github-runners/arctic1-16/_work/SparseBandedMatrices.jl/SparseBandedMatrices.jl"
 uuid = "bd59d7e1-4699-4102-944e-d05209cb92aa"
 version = "1.3.0"
 
