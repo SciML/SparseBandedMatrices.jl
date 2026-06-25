@@ -1,7 +1,8 @@
 module SparseBandedMatrices
 
-using LinearAlgebra, .Threads
-using PrecompileTools
+import LinearAlgebra: mul!
+using .Threads: @threads
+using PrecompileTools: @setup_workload, @compile_workload
 
 """
     SparseBandedMatrix{T} <: AbstractMatrix{T}
@@ -165,7 +166,7 @@ function setdiagonal!(M::SparseBandedMatrix{T}, diagvals, lower::Bool) where {T}
 end
 
 # C = Cb + aAB
-function LinearAlgebra.mul!(C::Matrix{T}, A::SparseBandedMatrix{T}, B::Matrix{T}, a::Number, b::Number) where {T}
+function mul!(C::Matrix{T}, A::SparseBandedMatrix{T}, B::Matrix{T}, a::Number, b::Number) where {T}
     @assert size(A, 2) == size(B, 1)
     @assert size(A, 1) == size(C, 1)
     @assert size(B, 2) == size(C, 2)
@@ -200,7 +201,7 @@ function LinearAlgebra.mul!(C::Matrix{T}, A::SparseBandedMatrix{T}, B::Matrix{T}
 end
 
 # C = C*b + a*B*A
-function LinearAlgebra.mul!(C::Matrix{T}, A::Matrix{T}, B::SparseBandedMatrix{T}, a::Number, b::Number) where {T}
+function mul!(C::Matrix{T}, A::Matrix{T}, B::SparseBandedMatrix{T}, a::Number, b::Number) where {T}
     @assert size(A, 2) == size(B, 1)
     @assert size(A, 1) == size(C, 1)
     @assert size(B, 2) == size(C, 2)
@@ -230,7 +231,7 @@ function LinearAlgebra.mul!(C::Matrix{T}, A::Matrix{T}, B::SparseBandedMatrix{T}
     return C
 end
 
-function LinearAlgebra.mul!(C::SparseBandedMatrix{T}, A::SparseBandedMatrix{T}, B::SparseBandedMatrix{T}, a::Number, b::Number) where {T}
+function mul!(C::SparseBandedMatrix{T}, A::SparseBandedMatrix{T}, B::SparseBandedMatrix{T}, a::Number, b::Number) where {T}
     @assert size(A, 2) == size(B, 1)
     @assert size(A, 1) == size(C, 1)
     @assert size(B, 2) == size(C, 2)
@@ -279,7 +280,7 @@ function LinearAlgebra.mul!(C::SparseBandedMatrix{T}, A::SparseBandedMatrix{T}, 
     return C
 end
 
-function LinearAlgebra.mul!(C::Matrix{T}, A::SparseBandedMatrix{T}, B::SparseBandedMatrix{T}, a::Number, b::Number) where {T}
+function mul!(C::Matrix{T}, A::SparseBandedMatrix{T}, B::SparseBandedMatrix{T}, a::Number, b::Number) where {T}
     @assert size(A, 2) == size(B, 1)
     @assert size(A, 1) == size(C, 1)
     @assert size(B, 2) == size(C, 2)
