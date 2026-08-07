@@ -6,52 +6,55 @@ using PrecompileTools: @setup_workload, @compile_workload
 
 """
     SparseBandedMatrix{T} <: AbstractMatrix{T}
-
-A sparse matrix type optimized for storing and multiplying banded matrices where only
-certain diagonals contain non-zero elements. This structure is particularly efficient
-for matrices arising from finite difference discretizations and butterfly factorizations.
-
-The matrix stores only the non-zero diagonals rather than all elements, providing
-significant memory savings and computational advantages for matrix operations.
-
-# Constructors
-
     SparseBandedMatrix{T}(undef, N, M)
+    SparseBandedMatrix{T}(indices, diagonals, N, M)
 
-Create an uninitialized `N × M` sparse banded matrix with element type `T`.
-Initially contains no diagonals; diagonals are added when elements are set.
+Construct an `N × M` matrix that stores only its nonzero diagonals. The type implements
+the `AbstractMatrix` indexing, conversion, and multiplication interfaces while avoiding
+storage for diagonals that are identically zero.
 
-# Arguments
-- `T`: Element type (e.g., `Float64`, `ComplexF64`)
-- `N`: Number of rows
-- `M`: Number of columns
-
-    SparseBandedMatrix{T}(ind_vals, diag_vals, N, M)
-
-Create an `N × M` sparse banded matrix with specified diagonals.
+The `undef` form starts with no stored diagonals; assigning an element or calling
+[`setdiagonal!`](@ref) creates the corresponding diagonal. The second form initializes the
+stored diagonals directly.
 
 # Arguments
-- `ind_vals`: Vector of diagonal indices indicating which diagonals contain non-zero elements
-- `diag_vals`: Vector of vectors containing the values for each diagonal
-- `N`: Number of rows
-- `M`: Number of columns
+
+- `T`: The matrix element type.
+- `undef`: Selects construction without any stored diagonals.
+- `indices::Vector{Int}`: Internal diagonal identifiers. For an `N × M` matrix, the
+  identifier for element `(i, j)` is `N - i + j`.
+- `diagonals::Vector{Vector{T}}`: Values for each identifier in `indices`. Each vector must
+  have the length of its represented diagonal.
+- `N::Integer`: The number of rows.
+- `M::Integer`: The number of columns.
+
+# Returns
+
+- `SparseBandedMatrix{T}`: A sparse-diagonal matrix with dimensions `(N, M)`.
 
 # Examples
 
 ```julia
-# Create an empty 5×5 matrix
-A = SparseBandedMatrix{Float64}(undef, 5, 5)
-A[1,1] = 5.0
+julia> using SparseBandedMatrices
 
-# Create a matrix with specified diagonals
-B = SparseBandedMatrix{Float64}([1, 8], [[3.0], [-2.0, 5.0, 1.0, 3.0]], 6, 6)
+julia> matrix = SparseBandedMatrix{Float64}(undef, 4, 4);
+
+julia> matrix[1, 1] = 5.0;
+
+julia> matrix[3, 2] = -1.0;
+
+julia> Matrix(matrix)
+4×4 Matrix{Float64}:
+ 5.0   0.0  0.0  0.0
+ 0.0   0.0  0.0  0.0
+ 0.0  -1.0  0.0  0.0
+ 0.0   0.0  0.0  0.0
 ```
 
-# Implementation Notes
+# Storage
 
-Diagonals are stored internally with an indexing scheme where for an N×M matrix,
-diagonal indices range from 1 to N+M-1. The storage is optimized for fast matrix
-multiplication operations used in butterfly factorizations.
+Use the standard matrix interface and [`setdiagonal!`](@ref). The concrete storage fields
+and diagonal identifier encoding are implementation details.
 """
 struct SparseBandedMatrix{T} <: AbstractMatrix{T}
     size::Tuple{Int, Int}
@@ -112,35 +115,49 @@ function Base.setindex!(M::SparseBandedMatrix{T}, val, i::Int, j::Int, I::Int...
 end
 
 """
-    setdiagonal!(M::SparseBandedMatrix{T}, diagvals, lower::Bool) where T
+    setdiagonal!(matrix::SparseBandedMatrix, values, lower::Bool)
 
-Set a complete diagonal of the sparse banded matrix `M` with the values in `diagvals`.
+Set one complete stored diagonal of `matrix`. The length of `values` identifies the
+diagonal: `lower = true` places it against the bottom-left edge, while `lower = false`
+places it against the top-right edge. Existing values on that diagonal are overwritten.
 
-This function efficiently sets an entire diagonal at once, which is more efficient than
-setting individual elements when initializing banded matrices.
+This operation is more efficient than assigning every element separately because it
+inserts or updates the diagonal storage in one call.
 
 # Arguments
-- `M`: The sparse banded matrix to modify
-- `diagvals`: Vector of values to assign to the diagonal. Length must not exceed the number of rows in `M`
-- `lower`: If `true`, sets a lower diagonal; if `false`, sets an upper diagonal
+
+- `matrix::SparseBandedMatrix{T}`: The matrix to modify.
+- `values`: Values for the diagonal. They are converted to `T` when necessary, and their
+  length must not exceed the number of rows.
+- `lower::Bool`: Select the lower (`true`) or upper (`false`) diagonal of the given length.
 
 # Returns
-Returns `diagvals` unchanged.
+
+- `values`: The original input collection.
+
+# Throws
+
+- `ErrorException`: If `length(values)` exceeds the number of rows.
 
 # Examples
 
 ```julia
-A = SparseBandedMatrix{Float64}(undef, 5, 5)
+julia> using SparseBandedMatrices
 
-# Set the third diagonal from the bottom
-setdiagonal!(A, [3.0, 4.0, 5.0], true)
+julia> matrix = SparseBandedMatrix{Float64}(undef, 5, 5);
 
-# Set an upper diagonal
-setdiagonal!(A, [1.0, 2.0], false)
+julia> setdiagonal!(matrix, [3.0, 4.0, 5.0], true);
+
+julia> setdiagonal!(matrix, [1.0, 2.0], false);
+
+julia> findall(!iszero, Matrix(matrix))
+5-element Vector{CartesianIndex{2}}:
+ CartesianIndex(3, 1)
+ CartesianIndex(4, 2)
+ CartesianIndex(5, 3)
+ CartesianIndex(1, 4)
+ CartesianIndex(2, 5)
 ```
-
-# Throws
-- `ErrorException`: If `length(diagvals) > rows` (diagonal is too large for the matrix)
 """
 function setdiagonal!(M::SparseBandedMatrix{T}, diagvals, lower::Bool) where {T}
     rows, cols = size(M)
@@ -328,7 +345,7 @@ function mul!(C::Matrix{T}, A::SparseBandedMatrix{T}, B::SparseBandedMatrix{T}, 
     return C
 end
 
-export SparseBandedMatrix, size, getindex, setindex!, setdiagonal!, mul!
+export SparseBandedMatrix, setdiagonal!
 
 @setup_workload begin
     # Minimal setup - create small test arrays

@@ -11,6 +11,8 @@ isfile("./docs/Project.toml") && cp("./docs/Project.toml", "./docs/src/assets/Pr
 
 makedocs(;
     modules = [SparseBandedMatrices],
+    doctest = true,
+    checkdocs = :exports,
     authors = "Chris Rackauckas <accounts@chrisrackauckas.com> and contributors",
     repo = "https://github.com/SciML/SparseBandedMatrices.jl/blob/{commit}{path}#{line}",
     sitename = "SparseBandedMatrices.jl",

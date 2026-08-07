@@ -2,6 +2,13 @@ using Test
 using SparseBandedMatrices
 using LinearAlgebra
 
+@testset "Public API ownership" begin
+    public_names = names(SparseBandedMatrices)
+    @test :SparseBandedMatrix in public_names
+    @test :setdiagonal! in public_names
+    @test isempty(intersect((:getindex, :mul!, :setindex!, :size), public_names))
+end
+
 @testset "BigFloat Support" begin
     # Test 1: Basic constructor
     @testset "Constructor" begin
