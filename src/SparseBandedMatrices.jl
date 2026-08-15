@@ -99,12 +99,13 @@ end
 
 function Base.setindex!(M::SparseBandedMatrix{T}, val, i::Int, j::Int, I::Int...) where {T}
     @boundscheck checkbounds(M, i, j, I...)
-    rows = size(M, 1)
+    rows, cols = size(M)
     wanted_ind = rows - i + j
     ind = searchsortedfirst(M.indices, wanted_ind)
     if (ind > length(M.indices) || M.indices[ind] != wanted_ind)
         insert!(M.indices, ind, wanted_ind)
-        insert!(M.diags, ind, zeros(T, rows - abs(wanted_ind - rows)))
+        diagonal_length = min(rows, cols, wanted_ind, rows + cols - wanted_ind)
+        insert!(M.diags, ind, zeros(T, diagonal_length))
     end
     if (i > j)
         M.diags[ind][j] = val isa T ? val : convert(T, val)::T
