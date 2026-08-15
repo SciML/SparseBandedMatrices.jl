@@ -32,6 +32,23 @@ stored diagonals directly.
 
 - `SparseBandedMatrix{T}`: A sparse-diagonal matrix with dimensions `(N, M)`.
 
+# Fields
+
+- `size::Tuple{Int, Int}`: The logical matrix dimensions.
+- `indices::Vector{Int}`: Sorted identifiers for the stored diagonals. For an
+  `N x M` matrix, the identifier of entry `(i, j)` is `N - i + j`.
+- `diags::Vector{Vector{T}}`: Values for the corresponding stored diagonals. The
+  `k`th vector in `diags` belongs to the diagonal identified by `indices[k]`.
+
+# Interface
+
+`SparseBandedMatrix` follows the standard `AbstractMatrix` interface. Generic
+matrix code may use `size`, `axes`, `getindex`, `setindex!`, iteration, and
+conversion to `Matrix`; it should not depend on the storage fields above. An
+entry on a diagonal that has not been stored reads as `zero(T)`. Assigning an
+entry creates its diagonal when necessary, and assigning a complete diagonal is
+more efficient with [`setdiagonal!`](@ref).
+
 # Examples
 
 ```julia

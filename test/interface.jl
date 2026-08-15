@@ -160,3 +160,21 @@ end
         @test Base.IndexStyle(typeof(A)) == IndexCartesian()
     end
 end
+
+@testset "Generic AbstractMatrix consumer" begin
+    function column_sums(A::AbstractMatrix)
+        result = zeros(eltype(A), axes(A, 2))
+        for j in axes(A, 2), i in axes(A, 1)
+            result[j] += A[i, j]
+        end
+        return result
+    end
+
+    A = SparseBandedMatrix{Float64}(undef, 3, 3)
+    A[1, 1] = 2.0
+    A[2, 1] = 3.0
+    A[2, 3] = -1.0
+    A[3, 3] = 5.0
+
+    @test column_sums(A) == [5.0, 0.0, 4.0]
+end
