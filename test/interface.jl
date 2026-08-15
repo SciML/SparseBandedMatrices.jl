@@ -111,6 +111,16 @@ end
     end
 end
 
+@testset "Rectangular indexing" begin
+    for (rows, cols) in ((3, 4), (4, 3), (2, 5), (5, 2))
+        A = SparseBandedMatrix{Float64}(undef, rows, cols)
+        for j in 1:cols, i in 1:rows
+            A[i, j] = i + 10j
+        end
+        @test Matrix(A) == [i + 10j for i in 1:rows, j in 1:cols]
+    end
+end
+
 # Note: ComplexF64 is not fully supported because fma() is not defined for complex numbers.
 # This is a known limitation of the current implementation which uses fma for performance.
 
